@@ -45,6 +45,7 @@ func GetKeycloakProvisionCommand(cr *orgv1.CheCluster, cheHost string) (command 
 	cheFlavor := util.GetValue(cr.Spec.Server.CheFlavor, DefaultCheFlavor)
 	keycloakRealm := util.GetValue(cr.Spec.Auth.IdentityProviderRealm, cheFlavor)
 	keycloakClientId := util.GetValue(cr.Spec.Auth.IdentityProviderClientId, cheFlavor+"-public")
+	keycloakUrl := cr.Spec.Auth.IdentityProviderURL
 
 	if updateAdminPassword {
 		requiredActions = "\"UPDATE_PASSWORD\""
@@ -60,7 +61,6 @@ func GetKeycloakProvisionCommand(cr *orgv1.CheCluster, cheHost string) (command 
 		keycloakTheme = "rh-sso"
 		realmDisplayName = "CodeReady Workspaces"
 		script = "/opt/eap/bin/kcadm.sh"
-
 	}
 	str := string(file)
 	r := strings.NewReplacer("$script", script,
@@ -69,6 +69,7 @@ func GetKeycloakProvisionCommand(cr *orgv1.CheCluster, cheHost string) (command 
 		"$keycloakRealm", keycloakRealm,
 		"$realmDisplayName", realmDisplayName,
 		"$keycloakClientId", keycloakClientId,
+		"$keycloakUrl", keycloakUrl,
 		"$keycloakTheme", keycloakTheme,
 		"$cheHost", cheHost,
 		"$requiredActions", requiredActions)
@@ -93,9 +94,9 @@ func GetOpenShiftIdentityProviderProvisionCommand(cr *orgv1.CheCluster, oAuthCli
 	script := "/opt/jboss/keycloak/bin/kcadm.sh"
 	if cheFlavor == "codeready" {
 		script = "/opt/eap/bin/kcadm.sh"
-
 	}
 	keycloakClientId := util.GetValue(cr.Spec.Auth.IdentityProviderClientId, cheFlavor+"-public")
+	keycloakUrl := cr.Spec.Auth.IdentityProviderURL
 
 	providerId := "openshift-v3"
 	if isOpenShift4 {
@@ -131,6 +132,7 @@ func GetOpenShiftIdentityProviderProvisionCommand(cr *orgv1.CheCluster, oAuthCli
 			OauthSecret           string
 			OpenShiftApiUrl       string
 			KeycloakClientId      string
+			KeycloakUrl           string
 		}{
 			script,
 			keycloakAdminUserName,
@@ -141,6 +143,7 @@ func GetOpenShiftIdentityProviderProvisionCommand(cr *orgv1.CheCluster, oAuthCli
 			oauthSecret,
 			openShiftApiUrl,
 			keycloakClientId,
+			keycloakUrl,
 		})
 	if err != nil {
 		return "", err
@@ -159,6 +162,7 @@ func GetDeleteOpenShiftIdentityProviderProvisionCommand(cr *orgv1.CheCluster, ke
 	keycloakRealm := util.GetValue(cr.Spec.Auth.IdentityProviderRealm, cheFlavor)
 	keycloakAdminUserName := util.GetValue(cr.Spec.Auth.IdentityProviderAdminUserName, DefaultKeycloakAdminUserName)
 	script := "/opt/jboss/keycloak/bin/kcadm.sh"
+	keycloakUrl := cr.Spec.Auth.IdentityProviderURL
 	if cheFlavor == "codeready" {
 		script = "/opt/eap/bin/kcadm.sh"
 
@@ -169,7 +173,7 @@ func GetDeleteOpenShiftIdentityProviderProvisionCommand(cr *orgv1.CheCluster, ke
 		providerName = "openshift-v4"
 	}
 	deleteOpenShiftIdentityProviderCommand :=
-		script + " config credentials --server http://0.0.0.0:8080/auth " +
+		script + " config credentials --server " + keycloakUrl + " " +
 			"--realm master --user " + keycloakAdminUserName + " --password " + keycloakAdminPassword + " && " +
 			"if " + script + " get identity-provider/instances/" + providerName + " -r " + keycloakRealm + " ; then " +
 			script + " delete identity-provider/instances/" + providerName + " -r " + keycloakRealm + " ; fi"

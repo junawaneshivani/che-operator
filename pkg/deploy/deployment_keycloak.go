@@ -157,6 +157,18 @@ func NewKeycloakDeployment(cr *orgv1.CheCluster, keycloakPostgresPassword string
 			Value: keycloakPostgresPassword,
 		},
 		{
+			Name:  "SSO_TRUSTSTORE",
+			Value: "openshift.jks",
+		},
+		{
+			Name:  "SSO_TRUSTSTORE_DIR",
+			Value: jbossDir,
+		},
+		{
+			Name:  "SSO_TRUSTSTORE_PASSWORD",
+			Value: trustpass,
+		},
+		{
 			Name: "CHE_SELF__SIGNED__CERT",
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
